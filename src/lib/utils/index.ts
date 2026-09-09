@@ -493,6 +493,44 @@ export const bestMatchingLanguage = (
 	return match || defaultLocale;
 };
 
+export const deleteMessage = (
+	history: { messages: Record<string, any>; currentId: string | null },
+	messageId: string
+): { messages: Record<string, any>; currentId: string | null } => {
+	const messages = history.messages;
+	if (!messages[messageId]) {
+		throw new Error(`Message ${messageId} not found`);
+	}
+
+	const parentMessageId = messages[messageId].parentId;
+	const childMessageIds = messages[messageId].childrenIds ?? [];
+
+	const grandchildIds = childMessageIds.flatMap((childId) => messages[childId]?.childrenIds ?? []);
+
+	const nextMessages = { ...messages };
+	if (parentMessageId !== null && nextMessages[parentMessageId]) {
+		nextMessages[parentMessageId] = {
+			...nextMessages[parentMessageId],
+			childrenIds: [
+				...nextMessages[parentMessageId].childrenIds.filter((id) => id !== messageId),
+				...grandchildIds
+			]
+		};
+	}
+
+	grandchildIds.forEach((grandchildId) => {
+		if (nextMessages[grandchildId]) {
+			nextMessages[grandchildId] = { ...nextMessages[grandchildId], parentId: parentMessageId };
+		}
+	});
+
+	for (const id of [messageId, ...childMessageIds]) {
+		delete nextMessages[id];
+	}
+
+	return { messages: nextMessages, currentId: history.currentId };
+};
+
 export const createMessagesList = (
 	history: { messages: Record<string, any> },
 	messageId: string | null

@@ -5,7 +5,7 @@
 
 	import { toast } from 'svelte-sonner';
 	import { updateChatById } from '$lib/apis/chats';
-	import { createMessagesList } from '$lib/utils';
+	import { createMessagesList, deleteMessage as deleteMessageInHistory } from '$lib/utils';
 
 	import Message from './Messages/Message.svelte';
 	import Loader from '../common/Loader.svelte';
@@ -242,30 +242,10 @@
 	};
 
 	const deleteMessage = async (messageId) => {
-		const messageToDelete = history.messages[messageId];
-		const parentMessageId = messageToDelete.parentId;
-		const childMessageIds = messageToDelete.childrenIds ?? [];
-
-		const grandchildrenIds = childMessageIds.flatMap(
-			(childId) => history.messages[childId]?.childrenIds ?? []
-		);
-
-		if (parentMessageId && history.messages[parentMessageId]) {
-			history.messages[parentMessageId].childrenIds = [
-				...history.messages[parentMessageId].childrenIds.filter((id) => id !== messageId),
-				...grandchildrenIds
-			];
-		}
-
-		grandchildrenIds.forEach((grandchildId) => {
-			if (history.messages[grandchildId]) {
-				history.messages[grandchildId].parentId = parentMessageId;
-			}
-		});
-
-		[messageId, ...childMessageIds].forEach((id) => {
-			delete history.messages[id];
-		});
+		const parentMessageId = history.messages[messageId]?.parentId ?? null;
+		const next = deleteMessageInHistory(history, messageId);
+		history.messages = next.messages;
+		history.currentId = next.currentId;
 
 		showMessage({ id: parentMessageId });
 	};
