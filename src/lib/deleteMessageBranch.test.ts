@@ -14,7 +14,7 @@
  */
 import { vi, describe, it, expect, afterEach } from 'vitest';
 import { writable } from 'svelte/store';
-import { render, fireEvent, cleanup } from '@testing-library/svelte';
+import { render, fireEvent, cleanup, within } from '@testing-library/svelte';
 import { delay, waitFor } from '$lib/test/async';
 
 // jsdom lacks layout info, so focus-trap throws on dialog open
@@ -78,20 +78,11 @@ describe('Messages: deleting a branched user message deletes its whole subtree',
 		await waitFor(() => document.getElementById('message-u2-2') !== null);
 		expect(document.getElementById('message-u2-1')).toBeNull();
 
-		// The trash button carries no aria-label or id; identify it by its
-		// icon path so the test survives button reordering (Edit/Copy/Delete
-		// and sibling nav live in the same row)
-		const row = document.getElementById('message-u2-2')!;
-		const deleteButton = row.querySelector('button path[d^="m14.74 9"]')?.closest('button');
-		expect(deleteButton, 'trash button on user message').toBeTruthy();
-		await fireEvent.click(deleteButton!);
+		const row = within(document.getElementById('message-u2-2')!);
+		fireEvent.click(row.getByRole('button', { name: 'Delete' }));
 
 		await waitFor(() => document.body.textContent!.includes('Delete message?'));
-		const confirmButton = [...document.body.querySelectorAll('button')].find(
-			(button) => button.textContent!.trim() === 'Confirm'
-		);
-		expect(confirmButton, 'confirm button in delete dialog').toBeTruthy();
-		await fireEvent.click(confirmButton!);
+		fireEvent.click(within(document.body).getByRole('button', { name: 'Confirm' }));
 		await delay(50);
 
 		for (const id of ['u2-2', 'a2-2', 'u3-2', 'a3-2']) {
