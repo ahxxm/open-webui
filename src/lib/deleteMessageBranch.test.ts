@@ -25,7 +25,12 @@ vi.mock('focus-trap', () => ({
 
 function seedHistory(): ChatHistory {
 	const messages: ChatHistory['messages'] = {};
-	const add = (id: string, parentId: string | null, role: 'user' | 'assistant', content: string) => {
+	const add = (
+		id: string,
+		parentId: string | null,
+		role: 'user' | 'assistant',
+		content: string
+	) => {
 		messages[id] = { id, parentId, childrenIds: [], role, content, timestamp: 0 };
 		if (parentId !== null) messages[parentId].childrenIds.push(id);
 	};

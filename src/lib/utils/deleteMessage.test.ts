@@ -59,7 +59,16 @@ describe('deleteMessage', () => {
 	});
 
 	it('deletes a branched message with all descendants, sibling branch intact', () => {
-		const history = historyOf(['u1', null, 1], ['a1', 'u1', 2], ['u2-1', 'a1', 3], ['a2-1', 'u2-1', 4], ['u2-2', 'a1', 5], ['a2-2', 'u2-2', 6], ['u3-2', 'a2-2', 7], ['a3-2', 'u3-2', 8]);
+		const history = historyOf(
+			['u1', null, 1],
+			['a1', 'u1', 2],
+			['u2-1', 'a1', 3],
+			['a2-1', 'u2-1', 4],
+			['u2-2', 'a1', 5],
+			['a2-2', 'u2-2', 6],
+			['u3-2', 'a2-2', 7],
+			['a3-2', 'u3-2', 8]
+		);
 		history.currentId = 'a3-2';
 
 		const next = deleteMessage(history, 'u2-2');
@@ -69,7 +78,15 @@ describe('deleteMessage', () => {
 	});
 
 	it('deletes deep subtrees', () => {
-		const history = historyOf(['u1', null, 1], ['a1', 'u1', 2], ['u2', 'a1', 3], ['a2', 'u2', 4], ['u3', 'a2', 5], ['a3', 'u3', 6], ['u4', 'a3', 7]);
+		const history = historyOf(
+			['u1', null, 1],
+			['a1', 'u1', 2],
+			['u2', 'a1', 3],
+			['a2', 'u2', 4],
+			['u3', 'a2', 5],
+			['a3', 'u3', 6],
+			['u4', 'a3', 7]
+		);
 		history.currentId = 'u4';
 
 		const next = deleteMessage(history, 'u2');
@@ -88,7 +105,13 @@ describe('deleteMessage', () => {
 	});
 
 	it('preserves sibling order when deleting a middle sibling', () => {
-		const history = historyOf(['u1', null, 1], ['a1', 'u1', 2], ['u2-1', 'a1', 3], ['u2-2', 'a1', 4], ['u2-3', 'a1', 5]);
+		const history = historyOf(
+			['u1', null, 1],
+			['a1', 'u1', 2],
+			['u2-1', 'a1', 3],
+			['u2-2', 'a1', 4],
+			['u2-3', 'a1', 5]
+		);
 
 		const next = deleteMessage(history, 'u2-2');
 
@@ -96,7 +119,14 @@ describe('deleteMessage', () => {
 	});
 
 	it('falls back to the latest-timestamp message when currentId is deleted', () => {
-		const history = historyOf(['u1', null, 1], ['a1', 'u1', 2], ['u2-1', 'a1', 3], ['a2-1', 'u2-1', 4], ['u2-2', 'a1', 5], ['a2-2', 'u2-2', 6]);
+		const history = historyOf(
+			['u1', null, 1],
+			['a1', 'u1', 2],
+			['u2-1', 'a1', 3],
+			['a2-1', 'u2-1', 4],
+			['u2-2', 'a1', 5],
+			['a2-2', 'u2-2', 6]
+		);
 		history.currentId = 'a2-2';
 
 		const next = deleteMessage(history, 'u2-2');
@@ -105,7 +135,13 @@ describe('deleteMessage', () => {
 	});
 
 	it('keeps currentId when it survives the deletion', () => {
-		const history = historyOf(['u1', null, 1], ['a1', 'u1', 2], ['u2-1', 'a1', 3], ['a2-1', 'u2-1', 4], ['u2-2', 'a1', 5]);
+		const history = historyOf(
+			['u1', null, 1],
+			['a1', 'u1', 2],
+			['u2-1', 'a1', 3],
+			['a2-1', 'u2-1', 4],
+			['u2-2', 'a1', 5]
+		);
 		history.currentId = 'a2-1';
 
 		const next = deleteMessage(history, 'u2-2');
