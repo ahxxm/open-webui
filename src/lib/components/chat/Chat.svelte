@@ -31,7 +31,7 @@
 		refreshChatList
 	} from '$lib/stores';
 
-	import { createMessagesList, processDetails } from '$lib/utils';
+	import { createMessagesList, latestMessageId, processDetails } from '$lib/utils';
 
 	import {
 		createNewChat,
@@ -718,14 +718,7 @@
 		history = chatContent.history;
 
 		if (history.currentId && history.messages && !(history.currentId in history.messages)) {
-			let latest: string | null = null;
-			let latestTs = -1;
-			for (const [mid, msg] of Object.entries(history.messages) as [string, any][]) {
-				if ((msg.timestamp ?? 0) > latestTs) {
-					latestTs = msg.timestamp ?? 0;
-					latest = mid;
-				}
-			}
+			const latest = latestMessageId(history.messages);
 			console.warn('Dangling currentId', history.currentId, '— recovering to', latest);
 			history.currentId = latest;
 		}

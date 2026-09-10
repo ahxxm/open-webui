@@ -494,6 +494,19 @@ export const bestMatchingLanguage = (
 	return match || defaultLocale;
 };
 
+// latest timestamp wins, insertion order breaks ties
+export const latestMessageId = (messages: ChatHistory['messages']): string | null => {
+	let latest: string | null = null;
+	let latestTimestamp = -1;
+	for (const [id, message] of Object.entries(messages)) {
+		if (message.timestamp > latestTimestamp) {
+			latestTimestamp = message.timestamp;
+			latest = id;
+		}
+	}
+	return latest;
+};
+
 export const deleteMessage = (history: ChatHistory, messageId: string): ChatHistory => {
 	const messages = history.messages;
 	if (!messages[messageId]) {
@@ -501,32 +514,28 @@ export const deleteMessage = (history: ChatHistory, messageId: string): ChatHist
 	}
 
 	const parentMessageId = messages[messageId].parentId;
-	const childMessageIds = messages[messageId].childrenIds;
-
-	const grandchildIds = childMessageIds.flatMap((childId) => messages[childId]?.childrenIds ?? []);
 
 	const nextMessages = { ...messages };
-	if (parentMessageId !== null && nextMessages[parentMessageId]) {
-		nextMessages[parentMessageId] = {
-			...nextMessages[parentMessageId],
-			childrenIds: [
-				...nextMessages[parentMessageId].childrenIds.filter((id) => id !== messageId),
-				...grandchildIds
-			]
-		};
-	}
-
-	grandchildIds.forEach((grandchildId) => {
-		if (nextMessages[grandchildId]) {
-			nextMessages[grandchildId] = { ...nextMessages[grandchildId], parentId: parentMessageId };
-		}
-	});
-
-	for (const id of [messageId, ...childMessageIds]) {
+	const stack = [messageId];
+	while (stack.length > 0) {
+		const id = stack.pop()!;
+		stack.push(...(nextMessages[id]?.childrenIds ?? []));
 		delete nextMessages[id];
 	}
 
-	return { messages: nextMessages, currentId: history.currentId };
+	if (parentMessageId !== null) {
+		nextMessages[parentMessageId] = {
+			...nextMessages[parentMessageId],
+			childrenIds: nextMessages[parentMessageId].childrenIds.filter((id) => id !== messageId)
+		};
+	}
+
+	const currentId =
+		history.currentId !== null && nextMessages[history.currentId]
+			? history.currentId
+			: latestMessageId(nextMessages);
+
+	return { messages: nextMessages, currentId };
 };
 
 export const createMessagesList = (
