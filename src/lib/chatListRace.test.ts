@@ -76,34 +76,39 @@ describe('Sidebar: shift-delete race', () => {
 		// jsdom lacks IntersectionObserver. Loader uses observe/unobserve/rAF
 		// reobserve loop. This mock fires the callback asynchronously on each
 		// observe(), matching real behavior where the element is always visible.
-		vi.stubGlobal(
-			'IntersectionObserver',
-			class {
-				cb: any;
-				timerId: any;
-				active = true;
-				constructor(cb: any) {
-					this.cb = cb;
+		// Browsers have the real thing — leave it alone there.
+		if (typeof IntersectionObserver === 'undefined') {
+			vi.stubGlobal(
+				'IntersectionObserver',
+				class {
+					cb: any;
+					timerId: any;
+					active = true;
+					constructor(cb: any) {
+						this.cb = cb;
+					}
+					observe(el: Element) {
+						if (!this.active) return;
+						this.timerId = setTimeout(() => {
+							if (this.active) this.cb([{ isIntersecting: true, target: el }]);
+						}, 0);
+					}
+					unobserve() {
+						clearTimeout(this.timerId);
+					}
+					disconnect() {
+						this.active = false;
+						clearTimeout(this.timerId);
+					}
 				}
-				observe(el: Element) {
-					if (!this.active) return;
-					this.timerId = setTimeout(() => {
-						if (this.active) this.cb([{ isIntersecting: true, target: el }]);
-					}, 0);
-				}
-				unobserve() {
-					clearTimeout(this.timerId);
-				}
-				disconnect() {
-					this.active = false;
-					clearTimeout(this.timerId);
-				}
-			}
-		);
-		vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => {
-			const id = setTimeout(() => fn(0), 0);
-			return id;
-		});
+			);
+		}
+		if (typeof requestAnimationFrame === 'undefined') {
+			vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => {
+				const id = setTimeout(() => fn(0), 0);
+				return id;
+			});
+		}
 
 		// jsdom lacks Web Animations API
 		Element.prototype.animate ??= function () {

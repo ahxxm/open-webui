@@ -14,9 +14,10 @@ import { describe, it, expect, vi } from 'vitest';
 import type { ChatMessage, ChatHistory } from '$lib/types';
 
 // $lib/utils pulls in constants.ts which touches location when browser=true,
-// and builds a drag-ghost Image at module load; both are browser globals
+// and builds a drag-ghost Image at module load; both are browser globals.
+// jsdom lacks a usable Image; browsers have the real thing.
 vi.mock('$app/environment', () => ({ browser: false, dev: false }));
-vi.stubGlobal('Image', class {});
+if (typeof Image === 'undefined') vi.stubGlobal('Image', class {});
 
 const { deleteMessage } = await import('$lib/utils');
 
