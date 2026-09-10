@@ -422,6 +422,7 @@
 					{#if !readOnly}
 						<Tooltip content={$i18n.t('Edit')} placement="bottom">
 							<button
+								aria-label={$i18n.t('Edit')}
 								class="{($settings?.highContrastMode ?? false)
 									? ''
 									: 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition edit-user-message-button"
@@ -450,6 +451,7 @@
 					{#if message?.content}
 						<Tooltip content={$i18n.t('Copy')} placement="bottom">
 							<button
+								aria-label={$i18n.t('Copy')}
 								class="{($settings?.highContrastMode ?? false)
 									? ''
 									: 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition"
@@ -478,6 +480,7 @@
 					{#if !readOnly && (!isFirstMessage || siblings.length > 1)}
 						<Tooltip content={$i18n.t('Delete')} placement="bottom">
 							<button
+								aria-label={$i18n.t('Delete')}
 								class="{($settings?.highContrastMode ?? false)
 									? ''
 									: 'invisible group-hover:visible'} p-1 rounded-sm dark:hover:text-white hover:text-black transition"

@@ -1,6 +1,7 @@
 import { v7 as uuidv7 } from 'uuid';
 import { decode } from 'html-entities';
 import { WEBUI_BASE_URL } from '$lib/constants';
+import type { ChatHistory } from '$lib/types';
 
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
@@ -491,6 +492,50 @@ export const bestMatchingLanguage = (
 		.find(Boolean);
 
 	return match || defaultLocale;
+};
+
+// latest timestamp wins, insertion order breaks ties
+export const latestMessageId = (messages: ChatHistory['messages']): string | null => {
+	let latest: string | null = null;
+	let latestTimestamp = -1;
+	for (const [id, message] of Object.entries(messages)) {
+		if (message.timestamp > latestTimestamp) {
+			latestTimestamp = message.timestamp;
+			latest = id;
+		}
+	}
+	return latest;
+};
+
+export const deleteMessage = (history: ChatHistory, messageId: string): ChatHistory => {
+	const messages = history.messages;
+	if (!messages[messageId]) {
+		throw new Error(`Message ${messageId} not found`);
+	}
+
+	const parentMessageId = messages[messageId].parentId;
+
+	const nextMessages = { ...messages };
+	const stack = [messageId];
+	while (stack.length > 0) {
+		const id = stack.pop()!;
+		stack.push(...(nextMessages[id]?.childrenIds ?? []));
+		delete nextMessages[id];
+	}
+
+	if (parentMessageId !== null) {
+		nextMessages[parentMessageId] = {
+			...nextMessages[parentMessageId],
+			childrenIds: nextMessages[parentMessageId].childrenIds.filter((id) => id !== messageId)
+		};
+	}
+
+	const currentId =
+		history.currentId !== null && nextMessages[history.currentId]
+			? history.currentId
+			: latestMessageId(nextMessages);
+
+	return { messages: nextMessages, currentId };
 };
 
 export const createMessagesList = (

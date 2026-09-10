@@ -1,24 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Regression test for chat list disappearing after rapid deletes.
- *
- * Bug: user has 10 chats, shift-deletes 2 in quick succession, all chats
- * vanish from the sidebar until page refresh. Backend is fine — it returns
- * the correct 8 chats. The problem is entirely in the frontend.
- *
- * How it happens:
- *   1. Each delete triggers initChatList(), which refetches the full chat list.
- *   2. initChatList sets currentChatPage=1 up front, but reads $currentChatPage
- *      much later (after a sequential await for pinned chats).
- *   3. When the first initChatList completes, it sets scrollPaginationEnabled=true.
- *      The infinite-scroll Loader sees this, fires loadMoreChats(), which bumps
- *      currentChatPage to 2.
- *   4. The second initChatList then reads $currentChatPage=2 for its getChatList
- *      call. Page 2 is empty (all 8 chats fit on page 1). chats.set([]).
- *
- * This test renders the real Sidebar component, proxies fetch to the real
- * FastAPI backend, and clicks real trash buttons. No application logic is
- * reimplemented.
+ * Shift-deleting two chats in quick succession should leave the remaining
+ * chats visible in the sidebar.
+ * e.g. Shift-delete 2 of 70 (2 pages) should leave 68 visible.
  */
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writable, get } from 'svelte/store';
@@ -53,6 +37,7 @@ vi.mock('$lib/apis/tasks', () => ({
 }));
 
 import { render, fireEvent, cleanup } from '@testing-library/svelte';
+import { delay, waitFor } from '$lib/test/async';
 import {
 	chats,
 	pinnedChats,
@@ -66,17 +51,6 @@ import {
 // long enough for IntersectionObserver ticks (100ms) to interleave
 const NET = 50;
 const CLICK_GAP = NET * 2;
-
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-async function waitFor(fn: () => boolean, timeoutMs = 5000) {
-	const deadline = Date.now() + timeoutMs;
-	while (Date.now() < deadline) {
-		if (fn()) return;
-		await delay(50);
-	}
-	throw new Error(`waitFor timed out after ${timeoutMs}ms`);
-}
 
 // ── Store setup ──────────────────────────────────────────────────────────────
 // Minimal store state so the component renders: user logged in, sidebar open.
