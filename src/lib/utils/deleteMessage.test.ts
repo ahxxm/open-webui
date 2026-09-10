@@ -11,6 +11,7 @@
  *   load-time dangling-currentId recovery in Chat.svelte)
  */
 import { describe, it, expect, vi } from 'vitest';
+import type { ChatMessage, ChatHistory } from '$lib/types';
 
 // $lib/utils pulls in constants.ts which touches location when browser=true,
 // and builds a drag-ghost Image at module load; both are browser globals
@@ -19,23 +20,28 @@ vi.stubGlobal('Image', class {});
 
 const { deleteMessage } = await import('$lib/utils');
 
-type Msg = { id: string; parentId: string | null; childrenIds: string[]; timestamp: number };
-
 function historyOf(...specs: [id: string, parentId: string | null, timestamp: number][]) {
-	const messages: Record<string, Msg> = {};
+	const messages: Record<string, ChatMessage> = {};
 	for (const [id, parentId, timestamp] of specs) {
-		messages[id] = { id, parentId, childrenIds: [], timestamp };
+		messages[id] = {
+			id,
+			parentId,
+			childrenIds: [],
+			role: id.startsWith('u') ? 'user' : 'assistant',
+			content: id,
+			timestamp
+		};
 		if (parentId !== null) messages[parentId].childrenIds.push(id);
 	}
-	return { messages, currentId: null as string | null };
+	return { messages, currentId: null } as ChatHistory;
 }
 
 describe('deleteMessage', () => {
-	it('deletes a leaf and unlinks it from its parent', () => {
-		const history = historyOf(['u1', null, 1], ['a1', 'u1', 2], ['a2', 'a1', 3]);
+	it('deletes a leaf user message and unlinks it from its parent', () => {
+		const history = historyOf(['u1', null, 1], ['a1', 'u1', 2], ['u2', 'a1', 3]);
 		history.currentId = 'a1';
 
-		const next = deleteMessage(history, 'a2');
+		const next = deleteMessage(history, 'u2');
 
 		expect(Object.keys(next.messages)).toEqual(['u1', 'a1']);
 		expect(next.messages['a1'].childrenIds).toEqual([]);

@@ -1,6 +1,7 @@
 import { v7 as uuidv7 } from 'uuid';
 import { decode } from 'html-entities';
 import { WEBUI_BASE_URL } from '$lib/constants';
+import type { ChatHistory } from '$lib/types';
 
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
@@ -493,17 +494,14 @@ export const bestMatchingLanguage = (
 	return match || defaultLocale;
 };
 
-export const deleteMessage = (
-	history: { messages: Record<string, any>; currentId: string | null },
-	messageId: string
-): { messages: Record<string, any>; currentId: string | null } => {
+export const deleteMessage = (history: ChatHistory, messageId: string): ChatHistory => {
 	const messages = history.messages;
 	if (!messages[messageId]) {
 		throw new Error(`Message ${messageId} not found`);
 	}
 
 	const parentMessageId = messages[messageId].parentId;
-	const childMessageIds = messages[messageId].childrenIds ?? [];
+	const childMessageIds = messages[messageId].childrenIds;
 
 	const grandchildIds = childMessageIds.flatMap((childId) => messages[childId]?.childrenIds ?? []);
 

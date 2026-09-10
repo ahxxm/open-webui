@@ -16,25 +16,16 @@ import { vi, describe, it, expect, afterEach } from 'vitest';
 import { writable } from 'svelte/store';
 import { render, fireEvent, cleanup, within } from '@testing-library/svelte';
 import { delay, waitFor } from '$lib/test/async';
+import type { ChatHistory } from '$lib/types';
 
 // jsdom lacks layout info, so focus-trap throws on dialog open
 vi.mock('focus-trap', () => ({
 	createFocusTrap: () => ({ activate() {}, deactivate() {} })
 }));
 
-type Msg = {
-	id: string;
-	parentId: string | null;
-	childrenIds: string[];
-	role: 'user' | 'assistant';
-	content: string;
-	models?: string[];
-	timestamp: number;
-};
-
-function seedHistory() {
-	const messages: Record<string, Msg> = {};
-	const add = (id: string, parentId: string | null, role: Msg['role'], content: string) => {
+function seedHistory(): ChatHistory {
+	const messages: ChatHistory['messages'] = {};
+	const add = (id: string, parentId: string | null, role: 'user' | 'assistant', content: string) => {
 		messages[id] = { id, parentId, childrenIds: [], role, content, timestamp: 0 };
 		if (parentId !== null) messages[parentId].childrenIds.push(id);
 	};
@@ -48,7 +39,7 @@ function seedHistory() {
 	add('u3-2', 'a2-2', 'user', 'follow-up');
 	add('a3-2', 'u3-2', 'assistant', 'answer to follow-up');
 
-	return { messages, currentId: 'a3-2' as string | null };
+	return { messages, currentId: 'a3-2' };
 }
 
 describe('Messages: deleting a branched user message deletes its whole subtree', () => {
@@ -93,7 +84,7 @@ describe('Messages: deleting a branched user message deletes its whole subtree',
 		expect(history.messages['a1'].childrenIds).toEqual(['u2-1']);
 
 		expect(
-			history.messages[history.currentId as string],
+			history.currentId && history.messages[history.currentId],
 			'currentId must not dangle after delete'
 		).toBeDefined();
 	}, 30000);

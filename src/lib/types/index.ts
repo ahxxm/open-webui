@@ -8,12 +8,13 @@ export type ChatListItem = {
 };
 
 // Structural fields every message has; streaming adds arbitrary fields on top.
-type ChatMessage = {
+export type ChatMessage = {
 	id: string;
 	parentId: string | null;
 	childrenIds: string[];
 	role: 'user' | 'assistant' | 'system';
 	content: string;
+	timestamp: number;
 	[key: string]: any;
 };
 
