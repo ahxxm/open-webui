@@ -16,6 +16,10 @@ export default defineConfig({
 	// 'browser' condition the browser server resolves svelte to its server
 	// build and mount() fails.
 	resolve: browserTests ? { conditions: [...defaultClientConditions, 'svelte'] } : undefined,
+	// Pre-bundle deps the components import, so the browser server doesn't
+	// discover them mid-run: on-demand optimization reloads the page and
+	// cancels whatever test is executing (vitest warns about exactly this).
+	optimizeDeps: browserTests ? { include: ['katex', 'katex/contrib/mhchem'] } : undefined,
 	test: {
 		globalSetup: ['src/lib/test/globalSetup.ts'],
 		fileParallelism: false,
