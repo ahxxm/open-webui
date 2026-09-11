@@ -6,6 +6,9 @@ const TMP_ROOT = '/tmp/slim-test';
 const DATA_DIR = `${TMP_ROOT}/data`;
 
 let server: ChildProcess | null = null;
+process.on('exit', () => {
+	server?.kill('SIGTERM');
+});
 
 async function waitForReady(url: string, timeoutMs = 15_000) {
 	const deadline = Date.now() + timeoutMs;
