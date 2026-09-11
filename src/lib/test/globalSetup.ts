@@ -11,7 +11,7 @@ let refs = 0;
 // Browser mode creates two projects (core workspace + browser) and both
 // inherit this globalSetup, so setup/teardown each run twice. Share one
 // backend and only kill it when the last consumer tears down.
-// 'exit' is insurance for paths that never reach teardown (hard crash);
+// process.on('exit') covers runs that die before teardown (hard crash).
 process.on('exit', () => {
 	server?.kill('SIGTERM');
 });

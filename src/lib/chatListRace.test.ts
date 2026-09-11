@@ -27,10 +27,16 @@ vi.mock('$app/stores', () => ({
 	}
 }));
 
-// Sidebar imports these but they're not relevant to the chat list race
+// Sidebar imports these but they're not relevant to the chat list race.
+// Browser mode uses native ESM with sealed module namespaces, so the mock
+// must provide every named export the component tree imports.
 vi.mock('$lib/apis/folders', () => ({
 	createNewFolder: vi.fn(),
-	getFolders: vi.fn().mockResolvedValue([])
+	getFolders: vi.fn().mockResolvedValue([]),
+	getFolderById: vi.fn(),
+	updateFolderById: vi.fn(),
+	updateFolderIsExpandedById: vi.fn(),
+	deleteFolderById: vi.fn()
 }));
 vi.mock('$lib/apis/tasks', () => ({
 	checkActiveChats: vi.fn().mockResolvedValue({ active_chat_ids: [] })
@@ -73,36 +79,34 @@ function seedStores() {
 
 describe('Sidebar: shift-delete race', () => {
 	beforeEach(async () => {
-		// jsdom lacks IntersectionObserver. Loader uses observe/unobserve/rAF
-		// reobserve loop. This mock fires the callback asynchronously on each
-		// observe(), matching real behavior where the element is always visible.
-		// Browsers have the real thing — leave it alone there.
-		if (typeof IntersectionObserver === 'undefined') {
-			vi.stubGlobal(
-				'IntersectionObserver',
-				class {
-					cb: any;
-					timerId: any;
-					active = true;
-					constructor(cb: any) {
-						this.cb = cb;
-					}
-					observe(el: Element) {
-						if (!this.active) return;
-						this.timerId = setTimeout(() => {
-							if (this.active) this.cb([{ isIntersecting: true, target: el }]);
-						}, 0);
-					}
-					unobserve() {
-						clearTimeout(this.timerId);
-					}
-					disconnect() {
-						this.active = false;
-						clearTimeout(this.timerId);
-					}
+		// The Loader paginates via IntersectionObserver. This test is about the
+		// delete race, not scroll behavior, so the stub always reports the
+		// sentinel visible — the scenario is a user who has scrolled the whole
+		// list, in every environment.
+		vi.stubGlobal(
+			'IntersectionObserver',
+			class {
+				cb: any;
+				timerId: any;
+				active = true;
+				constructor(cb: any) {
+					this.cb = cb;
 				}
-			);
-		}
+				observe(el: Element) {
+					if (!this.active) return;
+					this.timerId = setTimeout(() => {
+						if (this.active) this.cb([{ isIntersecting: true, target: el }]);
+					}, 0);
+				}
+				unobserve() {
+					clearTimeout(this.timerId);
+				}
+				disconnect() {
+					this.active = false;
+					clearTimeout(this.timerId);
+				}
+			}
+		);
 		if (typeof requestAnimationFrame === 'undefined') {
 			vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => {
 				const id = setTimeout(() => fn(0), 0);
@@ -146,7 +150,8 @@ describe('Sidebar: shift-delete race', () => {
 			context: new Map([['i18n', writable({ t: (k: string) => k })]])
 		});
 
-		// Wait for initChatList + loadMoreChats to load all 70 chats
+		// Page 1 (60) loads on mount; the stub fires the Loader's callback on
+		// observe(), so loadMoreChats fetches page 2 without any scrolling.
 		await waitFor(() => container.querySelectorAll('a[href^="/c/"]').length === 70);
 
 		const chatLinks = container.querySelectorAll('a[href^="/c/"]');
