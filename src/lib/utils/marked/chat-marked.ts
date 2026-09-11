@@ -9,7 +9,7 @@ const chatMarked = new Marked();
 
 const options = { throwOnError: false };
 
-chatMarked.use(markedKatexExtension(options));
+chatMarked.use(markedKatexExtension());
 chatMarked.use(markedExtension(options));
 chatMarked.use(citationExtension());
 chatMarked.use(footnoteExtension());

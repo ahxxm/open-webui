@@ -1,4 +1,4 @@
-import type { Token } from 'marked';
+import type { MarkedExtension, Token, TokenizerAndRendererExtension, Tokens } from 'marked';
 
 export type KatexToken = Token & {
 	type: 'inlineKatex' | 'blockKatex';
@@ -6,7 +6,13 @@ export type KatexToken = Token & {
 	displayMode: boolean;
 };
 
-const DELIMITER_LIST = [
+interface MathDelimiter {
+	left: string;
+	right: string;
+	display: boolean;
+}
+
+const DELIMITER_LIST: MathDelimiter[] = [
 	{ left: '$$', right: '$$', display: true },
 	{ left: '$', right: '$', display: false },
 	{ left: '\\pu{', right: '}', display: false },
@@ -18,7 +24,7 @@ const DELIMITER_LIST = [
 
 // Defines characters that are allowed to immediately precede or follow a math delimiter.
 const ALLOWED_SURROUNDING_CHARS =
-	'\\s。，、､;；„“‘’“”（）「」『』［］《》【】‹›«»…⋯:：？！～⇒?!-\\/:-@\\[-`{-~\\p{Script=Han}\\p{Script=Hiragana}\\p{Script=Katakana}\\p{Script=Hangul}';
+	'\\s。，、､;；„“‘’“”（）「」『』［］《》【】‹›«»…⋯:：？！～⇒?!-/:-@\\[-`{-~\\p{Script=Han}\\p{Script=Hiragana}\\p{Script=Katakana}\\p{Script=Hangul}';
 // Modified to fit more formats in different languages. Originally: '\\s?。，、；!-\\/:-@\\[-`{-~\\p{Script=Han}\\p{Script=Hiragana}\\p{Script=Katakana}\\p{Script=Hangul}';
 
 // Pre-compile the surrounding character regex once at module load time.
@@ -27,22 +33,17 @@ const ALLOWED_SURROUNDING_CHARS =
 // markdown rendering time to be spent in KaTeX regex compilation.
 const ALLOWED_SURROUNDING_CHARS_REGEX = new RegExp(`[${ALLOWED_SURROUNDING_CHARS}]`, 'u');
 
-// const DELIMITER_LIST = [
-//     { left: '$$', right: '$$', display: false },
-//     { left: '$', right: '$', display: false },
-// ];
+const inlinePatterns: string[] = [];
+const blockPatterns: string[] = [];
 
-// const inlineRule = /^(\${1,2})(?!\$)((?:\\.|[^\\\n])*?(?:\\.|[^\\\n\$]))\1(?=[\s?!\.,:？！。，：]|$)/;
-// const blockRule = /^(\${1,2})\n((?:\\[^]|[^\\])+?)\n\1(?:\n|$)/;
-
-const inlinePatterns = [];
-const blockPatterns = [];
-
-function escapeRegex(string) {
-	return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+function escapeRegex(string: string): string {
+	return string.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
-function generateRegexRules(delimiters) {
+function generateRegexRules(delimiters: MathDelimiter[]): {
+	inlineRule: RegExp;
+	blockRule: RegExp;
+} {
 	delimiters.forEach((delimiter) => {
 		const { left, right, display } = delimiter;
 		// Ensure regex-safe delimiters
@@ -74,13 +75,13 @@ function generateRegexRules(delimiters) {
 
 const { inlineRule, blockRule } = generateRegexRules(DELIMITER_LIST);
 
-export default function (options = {}) {
+export default function (): MarkedExtension {
 	return {
-		extensions: [inlineKatex(options), blockKatex(options)]
+		extensions: [inlineKatex(), blockKatex()]
 	};
 }
 
-function katexStart(src, displayMode: boolean) {
+function katexStart(src: string, displayMode: boolean): number | undefined {
 	for (let i = 0; i < src.length; i++) {
 		const ch = src.charCodeAt(i);
 
@@ -109,7 +110,11 @@ function katexStart(src, displayMode: boolean) {
 	}
 }
 
-function katexTokenizer(src, tokens, displayMode: boolean): KatexToken | undefined {
+function katexTokenizer(
+	src: string,
+	tokens: Token[] | Tokens.List,
+	displayMode: boolean
+): KatexToken | undefined {
 	const ruleReg = displayMode ? blockRule : inlineRule;
 	const type = displayMode ? 'blockKatex' : 'inlineKatex';
 
@@ -124,40 +129,40 @@ function katexTokenizer(src, tokens, displayMode: boolean): KatexToken | undefin
 		return {
 			type,
 			raw: match[0],
-			text: text,
+			text: text ?? '',
 			displayMode
 		};
 	}
 }
 
-function inlineKatex(options) {
+function inlineKatex(): TokenizerAndRendererExtension {
 	return {
 		name: 'inlineKatex',
 		level: 'inline',
-		start(src) {
+		start(src: string) {
 			return katexStart(src, false);
 		},
-		tokenizer(src, tokens) {
+		tokenizer(src: string, tokens) {
 			return katexTokenizer(src, tokens, false);
 		},
 		renderer(token) {
-			return `${token?.text ?? ''}`;
+			return `${(token as KatexToken)?.text ?? ''}`;
 		}
 	};
 }
 
-function blockKatex(options) {
+function blockKatex(): TokenizerAndRendererExtension {
 	return {
 		name: 'blockKatex',
 		level: 'block',
-		start(src) {
+		start(src: string) {
 			return katexStart(src, true);
 		},
-		tokenizer(src, tokens) {
+		tokenizer(src: string, tokens) {
 			return katexTokenizer(src, tokens, true);
 		},
 		renderer(token) {
-			return `${token?.text ?? ''}`;
+			return `${(token as KatexToken)?.text ?? ''}`;
 		}
 	};
 }
