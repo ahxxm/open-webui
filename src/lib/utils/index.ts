@@ -255,7 +255,7 @@ export const copyToClipboard = async (
 			]);
 
 			const clipboardMarked = new Marked();
-			clipboardMarked.use(markedKatexExtension({ throwOnError: false }));
+			clipboardMarked.use(markedKatexExtension());
 			clipboardMarked.use(markedExtension({ throwOnError: false }));
 			clipboardMarked.use({
 				renderer: {
