@@ -55,6 +55,12 @@ export const isUnsafeInlineBoundary = (
 		return true;
 	}
 
+	// An escape token (e.g. \\( ) can be the leading half of an inline math
+	// delimiter; a later update may still close it, so never freeze across it.
+	if (previousToken.type === 'escape' || nextToken.type === 'escape') {
+		return true;
+	}
+
 	if (previousToken.type === 'text') {
 		const previousRaw = getTokenRaw(previousToken);
 
