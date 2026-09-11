@@ -6,6 +6,12 @@ const TMP_ROOT = '/tmp/slim-test';
 const DATA_DIR = `${TMP_ROOT}/data`;
 
 let server: ChildProcess | null = null;
+let refs = 0;
+
+// Browser mode creates two projects (core workspace + browser) and both
+// inherit this globalSetup, so setup/teardown each run twice. Share one
+// backend and only kill it when the last consumer tears down.
+// 'exit' is insurance for paths that never reach teardown (hard crash);
 process.on('exit', () => {
 	server?.kill('SIGTERM');
 });
@@ -23,6 +29,12 @@ async function waitForReady(url: string, timeoutMs = 15_000) {
 }
 
 export async function setup() {
+	if (server) {
+		refs++;
+		return;
+	}
+	refs = 1;
+
 	await rm(TMP_ROOT, { recursive: true, force: true });
 	await mkdir(DATA_DIR, { recursive: true });
 
@@ -48,6 +60,7 @@ export async function setup() {
 }
 
 export async function teardown() {
+	if (server && --refs > 0) return;
 	if (server) {
 		server.kill('SIGTERM');
 		await new Promise<void>((resolve) => {
