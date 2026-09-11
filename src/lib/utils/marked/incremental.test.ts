@@ -202,4 +202,33 @@ describe('incremental markdown token state', () => {
 		expect(nextTokens[1].href).toBe('https://example.com/image.png');
 		expect(nextTokens[1].tokens?.[0]?.type).toBe('strong');
 	});
+
+	it('renders streaming inline katex correctly once \\( delimiter closes)', () => {
+		const sources = [String.raw`\((\arctan x)\)`, String.raw`\((F(b)-F(-\infty))\)`];
+
+		for (const source of sources) {
+			let state = createIncrementalTokenState('inline', { seedLinks: EMPTY_LINKS });
+
+			for (const end of source.split('').map((_, index) => index + 1)) {
+				state = updateIncrementalTokenState(state, source.slice(0, end), {
+					seedLinks: EMPTY_LINKS
+				});
+			}
+
+			const tokens = getRenderSegments(state).flatMap((segment) => segment.tokens) as any[];
+			const freshTokens = new chatMarked.Lexer(chatMarked.defaults).inlineTokens(source) as any[];
+
+			expect(tokens.map((token) => token.type), 'matches a fresh lex of the complete source').toEqual(
+				freshTokens.map((token) => token.type)
+			);
+			expect(tokens, 'leaves no escape token behind').not.toContainEqual(
+				expect.objectContaining({ type: 'escape' })
+			);
+			expect(
+				tokens.some((token) => token.type === 'inlineKatex' && token.text?.length > 0),
+				'keeps the inline katex token with its content'
+			).toBe(true);
+		}
+	});
+
 });
