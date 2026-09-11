@@ -1,3 +1,11 @@
+import type { Token } from 'marked';
+
+export type KatexToken = Token & {
+	type: 'inlineKatex' | 'blockKatex';
+	text: string;
+	displayMode: boolean;
+};
+
 const DELIMITER_LIST = [
 	{ left: '$$', right: '$$', display: true },
 	{ left: '$', right: '$', display: false },
@@ -101,7 +109,7 @@ function katexStart(src, displayMode: boolean) {
 	}
 }
 
-function katexTokenizer(src, tokens, displayMode: boolean) {
+function katexTokenizer(src, tokens, displayMode: boolean): KatexToken | undefined {
 	const ruleReg = displayMode ? blockRule : inlineRule;
 	const type = displayMode ? 'blockKatex' : 'inlineKatex';
 
