@@ -218,9 +218,10 @@ describe('incremental markdown token state', () => {
 			const tokens = getRenderSegments(state).flatMap((segment) => segment.tokens) as any[];
 			const freshTokens = new chatMarked.Lexer(chatMarked.defaults).inlineTokens(source) as any[];
 
-			expect(tokens.map((token) => token.type), 'matches a fresh lex of the complete source').toEqual(
-				freshTokens.map((token) => token.type)
-			);
+			expect(
+				tokens.map((token) => token.type),
+				'matches a fresh lex of the complete source'
+			).toEqual(freshTokens.map((token) => token.type));
 			expect(tokens, 'leaves no escape token behind').not.toContainEqual(
 				expect.objectContaining({ type: 'escape' })
 			);
@@ -230,5 +231,4 @@ describe('incremental markdown token state', () => {
 			).toBe(true);
 		}
 	});
-
 });
