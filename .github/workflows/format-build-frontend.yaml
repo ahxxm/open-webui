@@ -74,3 +74,9 @@ jobs:
 
       - name: Run vitest
         run: npm run test:frontend
+
+      - name: Install Playwright Firefox with system dependencies
+        run: npx playwright install --with-deps firefox
+
+      - name: Run vitest (browser mode, Firefox headless)
+        run: npm run test:frontend:browser

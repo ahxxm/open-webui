@@ -18,7 +18,8 @@
 		"format": "prettier --write \"**/*.{js,ts,svelte,css,md,html,json}\"",
 		"format:backend": "uv run black . --exclude \".venv/|/venv/|node_modules/\"",
 		"i18n:parse": "i18next-cli extract && prettier --write \"src/lib/i18n/**/*.{js,json}\"",
-		"test:frontend": "vitest run --passWithNoTests"
+		"test:frontend": "vitest run --passWithNoTests",
+		"test:frontend:browser": "VITEST_BROWSER=1 vitest run --passWithNoTests"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
@@ -29,6 +30,8 @@
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.2.2",
 		"@testing-library/svelte": "^5.3.1",
+		"@vitest/browser": "^4.1.11",
+		"@vitest/browser-playwright": "^4.1.11",
 		"@typescript-eslint/eslint-plugin": "^8.67.0",
 		"@typescript-eslint/parser": "^8.67.0",
 		"eslint": "^10.8.1",
@@ -36,6 +39,7 @@
 		"eslint-plugin-svelte": "^3.23.0",
 		"i18next-cli": "^1.71.0",
 		"jsdom": "^29.0.1",
+		"playwright": "^1.63.0",
 		"postcss": "^8.5.26",
 		"prettier": "^3.9.4",
 		"prettier-plugin-svelte": "^4.1.1",
